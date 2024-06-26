@@ -16,5 +16,4 @@ message Header {
 }
 
 message Transaction {
-
 }

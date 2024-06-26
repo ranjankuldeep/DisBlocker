@@ -22,5 +22,4 @@ func TestSignBlock(t *testing.T) {
 	sign := SignBlock(privKey, block)
 	assert.Equal(t, 64, len(sign.Bytes()))
 	assert.True(t, sign.Verify(pubKey, HashBlock(block)))
-
 }

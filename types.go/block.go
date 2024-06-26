@@ -9,7 +9,7 @@ import (
 	pb "google.golang.org/protobuf/proto"
 )
 
-// Hashblock returns a SHA256 of the Header.
+// Hashblock returns a SHA256 of the Header of the Block.
 func HashBlock(block *proto.Block) []byte {
 	b, err := pb.Marshal(block)
 	if err != nil {
@@ -19,6 +19,7 @@ func HashBlock(block *proto.Block) []byte {
 	return hash[:]
 }
 
+// ToDo: We shouldn't be signing the block.
 func SignBlock(pk *crypto.PrivateKey, block *proto.Block) *crypto.Signature {
 	return pk.Sign(HashBlock(block))
 }

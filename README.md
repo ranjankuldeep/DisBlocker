@@ -1,7 +1,7 @@
 # DisBlocker
 A Blockchain Implementation in Go.
 
-Functionality Included.
+Included.
 1. ED25519 Crypto
 2. UTXO Model
 3. Protobuffer Encoding

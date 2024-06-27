@@ -35,8 +35,10 @@ message Transaction {
     repeated TxOutput outputs = 3;
 }
 
+// Node will be a grpc server.
+// HandleTransaction is method defined to handle request or response.
 service Node {
     rpc HandleTransaction(Transaction) returns (None);
 }
 
-message None { }
+message None {}

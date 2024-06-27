@@ -5,9 +5,7 @@ import (
 )
 
 type TCPTransportOpts struct {
-	ListenAddr    string // Holds the address where a peer is listening.
-	HandshakeFunc HandshakeFunc
-	OnPeer        func(Peer) error
+	ListenAddr string // Holds the address where a peer is listening.
 }
 
 type TCPTransport struct {
@@ -21,11 +19,11 @@ func NewTCPTransport(opts TCPTransportOpts) *TCPTransport {
 	}
 }
 
-func (t *TCPTransport) ListenAndAccept() error {
+func (t *TCPTransport) Listen() (net.Listener, error) {
 	var err error
 	t.listener, err = net.Listen("tcp", t.ListenAddr)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return t.listener, err
 }

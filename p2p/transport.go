@@ -7,6 +7,6 @@ type Transport interface {
 	Addr() string           // Should give an listening ddress
 	Dial(string) error      // Should able to dial to any node in the network
 	ListenAndAccept() error // Should be conitnously listening for any incoming connection and accept the connection with handshaking
-	Consume() <-chan RPC    // A cosume channel so that we can listen for any message.
+	Consume() <-chan RPC    // A consume channel so that we can listen for any message.
 	Close() error           // Close the connection once done.
 }

@@ -38,7 +38,13 @@ message Transaction {
 // Node will be a grpc server.
 // HandleTransaction is method defined to handle request or response.
 service Node {
-    rpc HandleTransaction(Transaction) returns (None);
-}
+    rpc HandShake(Version) returns (Version);
+    rpc HandleTransaction(Transaction) returns (Ack);
+}   
 
+message Version{
+    string version =1;
+    int32 height =2;
+}
+message Ack {}
 message None {}

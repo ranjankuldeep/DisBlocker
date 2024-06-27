@@ -45,10 +45,12 @@ func makeTransaction() error {
 		return err
 	}
 	c := proto.NewNodeClient(client)
-	tx := &proto.Transaction{
-		Version: 1,
+	version := &proto.Version{
+		Version: "blocker-0.1",
+		Height:  100,
 	}
-	_, err = c.HandleTransaction(context.TODO(), tx)
+
+	_, err = c.HandShake(context.TODO(), version)
 	if err != nil {
 		logs.Logger.Errorf("Error Making Transaction")
 		return err

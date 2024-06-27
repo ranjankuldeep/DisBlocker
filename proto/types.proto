@@ -34,3 +34,9 @@ message Transaction {
     repeated TxInput inputs = 2;
     repeated TxOutput outputs = 3;
 }
+
+service Node {
+    rpc HandleTransaction(Transaction) returns (None);
+}
+
+message None { }

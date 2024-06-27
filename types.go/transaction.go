@@ -20,6 +20,7 @@ func HashTransaction(tx *proto.Transaction) []byte {
 	return hash[:]
 }
 
+// Todo: make it more robust
 func VerifyTransaction(tx *proto.Transaction) bool {
 	for _, input := range tx.Inputs {
 		sig := crypto.SignatureFromBytes(input.Signature)

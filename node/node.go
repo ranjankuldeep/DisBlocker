@@ -13,7 +13,8 @@ import (
 )
 
 type NodeOpts struct {
-	Transport p2p.Transport
+	ListenAddr string
+	Transport  p2p.Transport
 }
 type Node struct {
 	version string
@@ -30,7 +31,8 @@ func NewNode(listenAddr string) *Node {
 	}
 	tcp_transport := p2p.NewTCPTransport(tcpOptions)
 	nodeOpts := NodeOpts{
-		Transport: tcp_transport,
+		ListenAddr: listenAddr,
+		Transport:  tcp_transport,
 	}
 
 	return &Node{
@@ -71,14 +73,15 @@ func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*p
 
 func (n *Node) HandShake(ctx context.Context, clientVersion *proto.Version) (*proto.Version, error) {
 	ourVersion := &proto.Version{
-		Version: n.version,
-		Height:  100,
+		Version:    n.version,
+		Height:     100,
+		ListenAddr: n.ListenAddr,
 	}
 	peer, ok := peer.FromContext(ctx)
 	if !ok {
 		logs.Logger.Info("Unable to fetch peer from the context")
 	}
-	client, err := makeNodeClient(peer.Addr.String())
+	client, err := makeNodeClient(clientVersion.ListenAddr)
 	if err != nil {
 		return nil, err
 	}

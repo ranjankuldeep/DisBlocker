@@ -12,10 +12,9 @@ import (
 )
 
 func main() {
-	blockNode := node.NewNode()
 	listenAddr := ":3000"
+	blockNode := node.NewNode(listenAddr)
 
-	nodeServer := node.NewNodeServer(*blockNode, listenAddr)
 	logs.Logger.Infof("Server Running on Port %s", listenAddr)
 
 	go func() {
@@ -25,7 +24,7 @@ func main() {
 		}
 	}()
 
-	if err := nodeServer.StartServer(); err != nil {
+	if err := blockNode.StartServer(); err != nil {
 		logs.Logger.Errorf("Error Starting NOde server %+v", err)
 		panic(err)
 	}

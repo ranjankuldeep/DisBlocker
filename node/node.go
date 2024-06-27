@@ -5,26 +5,58 @@ import (
 	"sync"
 
 	"github.com/ranjankuldeep/DisBlocker/logs"
+	"github.com/ranjankuldeep/DisBlocker/p2p"
 	"github.com/ranjankuldeep/DisBlocker/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/peer"
 )
 
+type NodeOpts struct {
+	Transport p2p.Transport
+}
 type Node struct {
 	version string
+	NodeOpts
 
 	PeerLock sync.RWMutex
 	Peers    map[proto.NodeClient]*proto.Version
 	proto.UnimplementedNodeServer
 }
 
-func NewNode() *Node {
+func NewNode(listenAddr string) *Node {
+	tcpOptions := p2p.TCPTransportOpts{
+		ListenAddr: listenAddr,
+	}
+	tcp_transport := p2p.NewTCPTransport(tcpOptions)
+	nodeOpts := NodeOpts{
+		Transport: tcp_transport,
+	}
+
 	return &Node{
 		PeerLock: sync.RWMutex{},
 		Peers:    make(map[proto.NodeClient]*proto.Version),
-		version:  "blocker-0.1",
+		NodeOpts: nodeOpts,
+
+		version: "blocker-0.1",
 	}
+}
+
+func (n *Node) StartServer() error {
+	opts := []grpc.ServerOption{}
+	grpcServer := grpc.NewServer(opts...)
+
+	listener, err := n.Transport.Listen()
+	if err != nil {
+		logs.Logger.Errorf("Error Listening to Port %+v", err)
+		return err
+	}
+	proto.RegisterNodeServer(grpcServer, n)
+	if err := grpcServer.Serve(listener); err != nil {
+		logs.Logger.Errorf("Error Spinning up grpc server %+v", err)
+		return err
+	}
+	return nil
 }
 
 func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*proto.Ack, error) {

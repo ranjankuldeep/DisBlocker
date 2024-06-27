@@ -15,9 +15,16 @@ type NodeServer struct {
 	Node
 }
 
-func NewNodeServer(node Node, opts *NodeServerOpts) *NodeServer {
+func NewNodeServer(node Node, listenAddr string) *NodeServer {
+	tcpOptions := p2p.TCPTransportOpts{
+		ListenAddr: listenAddr,
+	}
+	tcp_transport := p2p.NewTCPTransport(tcpOptions)
+	nodeOpts := NodeServerOpts{
+		Transport: tcp_transport,
+	}
 	return &NodeServer{
-		NodeServerOpts: *opts,
+		NodeServerOpts: nodeOpts,
 		Node:           node,
 	}
 }

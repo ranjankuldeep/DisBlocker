@@ -6,7 +6,6 @@ import (
 
 	"github.com/ranjankuldeep/DisBlocker/logs"
 	"github.com/ranjankuldeep/DisBlocker/node"
-	"github.com/ranjankuldeep/DisBlocker/p2p"
 	"github.com/ranjankuldeep/DisBlocker/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -14,16 +13,10 @@ import (
 
 func main() {
 	blockNode := node.NewNode()
-	tcpOptions := p2p.TCPTransportOpts{
-		ListenAddr: ":3000",
-	}
-	tcp_transport := p2p.NewTCPTransport(tcpOptions)
+	listenAddr := ":3000"
 
-	nodeOpts := node.NodeServerOpts{
-		Transport: tcp_transport,
-	}
-	nodeServer := node.NewNodeServer(*blockNode, &nodeOpts)
-	logs.Logger.Infof("Server Running on Port %s", tcpOptions.ListenAddr)
+	nodeServer := node.NewNodeServer(*blockNode, listenAddr)
+	logs.Logger.Infof("Server Running on Port %s", listenAddr)
 
 	go func() {
 		for {

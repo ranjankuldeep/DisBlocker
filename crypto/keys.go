@@ -13,6 +13,7 @@ const (
 	privKeyLen = 64
 	pubKeyLen  = 32
 	bufLen     = 32
+	sigLen     = 64
 	addressLen = 20
 	seedLen    = 32
 )
@@ -53,6 +54,14 @@ func (pk *PrivateKey) Bytes() []byte {
 	return pk.key
 }
 
+func SignatureFromBytes(b []byte) *Signature {
+	if len(b) != sigLen {
+		panic("Invalid Siganture")
+	}
+	return &Signature{
+		value: b,
+	}
+}
 func (pk *PrivateKey) Sign(msg []byte) *Signature {
 	return &Signature{
 		value: ed25519.Sign(pk.key, msg),
@@ -64,6 +73,15 @@ func (pk *PrivateKey) Public() *PublicKey {
 	copy(buf, pk.key[32:])
 	return &PublicKey{
 		key: buf,
+	}
+}
+
+func NewPublicKeyFromBytes(b []byte) *PublicKey {
+	if len(b) != pubKeyLen {
+		panic("Invalid Public Key length")
+	}
+	return &PublicKey{
+		key: b,
 	}
 }
 

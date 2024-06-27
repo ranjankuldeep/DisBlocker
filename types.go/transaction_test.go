@@ -6,6 +6,7 @@ import (
 	"github.com/ranjankuldeep/DisBlocker/crypto"
 	"github.com/ranjankuldeep/DisBlocker/proto"
 	"github.com/ranjankuldeep/DisBlocker/util"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewTransaction(t *testing.T) {
@@ -34,4 +35,6 @@ func TestNewTransaction(t *testing.T) {
 	}
 	sign := SignTransaction(fromPrivKey, tx)
 	input.Signature = sign.Bytes()
+
+	assert.True(t, VerifyTransaction(tx))
 }

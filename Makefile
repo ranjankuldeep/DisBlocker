@@ -1,6 +1,6 @@
 build:
 	@go build -o bin/DisBlocker
-run:
+run: build
 	@./bin/DisBlocker
 test:
 	@go test -v ./...

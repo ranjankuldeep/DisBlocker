@@ -15,9 +15,10 @@ type NodeServer struct {
 	Node
 }
 
-func NewNodeServer(opts *NodeServerOpts) *NodeServer {
+func NewNodeServer(node Node, opts *NodeServerOpts) *NodeServer {
 	return &NodeServer{
 		NodeServerOpts: *opts,
+		Node:           node,
 	}
 }
 
@@ -31,6 +32,9 @@ func (n *NodeServer) StartServer() error {
 		return err
 	}
 	proto.RegisterNodeServer(grpcServer, &n.Node)
-	grpcServer.Serve(listener)
+	if err := grpcServer.Serve(listener); err != nil {
+		logs.Logger.Errorf("Error Spinning up grpc server %+v", err)
+		return err
+	}
 	return nil
 }

@@ -12,22 +12,17 @@ import (
 )
 
 func main() {
-	listenAddr := ":3000"
-	blockNode := node.NewNode(listenAddr)
+	makeNode(":3000", []string{})
+	time.Sleep(100 * time.Millisecond)
+	makeNode(":4000", []string{":3000"})
 
-	logs.Logger.Infof("Server Running on Port %s", listenAddr)
-
-	go func() {
-		for {
-			makeTransaction()
-			time.Sleep(2 * time.Second)
-		}
-	}()
-
-	if err := blockNode.StartServer(); err != nil {
-		logs.Logger.Errorf("Error Starting NOde server %+v", err)
-		panic(err)
-	}
+	// go func() {
+	// 	for {
+	// 		makeTransaction()
+	// 		time.Sleep(2 * time.Second)
+	// 	}
+	// }()
+	select {}
 }
 
 func makeTransaction() error {
@@ -38,8 +33,9 @@ func makeTransaction() error {
 	}
 	c := proto.NewNodeClient(client)
 	version := &proto.Version{
-		Version: "blocker-0.1",
-		Height:  100,
+		Version:    "blocker-0.1",
+		Height:     100,
+		ListenAddr: ":4000",
 	}
 
 	_, err = c.HandShake(context.TODO(), version)
@@ -48,4 +44,17 @@ func makeTransaction() error {
 		return err
 	}
 	return nil
+}
+
+func makeNode(listenAddr string, bootStrapAddrs []string) *node.Node {
+	blockNode := node.NewNode(listenAddr)
+	logs.Logger.Infof("Server Running on Port %s", listenAddr)
+	go blockNode.StartServer()
+	if len(bootStrapAddrs) > 0 {
+		if err := blockNode.BootStrapNetwork(bootStrapAddrs); err != nil {
+			logs.Logger.Errorf("Error BootStraping Network %+v", err)
+			panic(err)
+		}
+	}
+	return blockNode
 }

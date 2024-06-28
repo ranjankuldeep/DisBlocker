@@ -43,6 +43,21 @@ func NewNode(listenAddr string) *Node {
 		version: "blocker-0.1",
 	}
 }
+func (n *Node) BootStrapNetwork(addrs []string) error {
+	for _, addr := range addrs {
+		client, err := makeNodeClient(addr)
+		if err != nil {
+			return err
+		}
+		peerVersion, err := client.HandShake(context.Background(), n.getVersion())
+		if err != nil {
+			logs.Logger.Errorf("Error BootStraping Network")
+			continue
+		}
+		n.AddPeer(client, peerVersion)
+	}
+	return nil
+}
 
 func (n *Node) StartServer() error {
 	opts := []grpc.ServerOption{}
@@ -72,28 +87,18 @@ func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*p
 }
 
 func (n *Node) HandShake(ctx context.Context, clientVersion *proto.Version) (*proto.Version, error) {
-	ourVersion := &proto.Version{
-		Version:    n.version,
-		Height:     100,
-		ListenAddr: n.ListenAddr,
-	}
-	peer, ok := peer.FromContext(ctx)
-	if !ok {
-		logs.Logger.Info("Unable to fetch peer from the context")
-	}
 	client, err := makeNodeClient(clientVersion.ListenAddr)
 	if err != nil {
 		return nil, err
 	}
-	logs.Logger.Infof("Recieved version from %s: %v ", peer, clientVersion)
 	n.AddPeer(client, clientVersion)
-	return ourVersion, nil
+	return n.getVersion(), nil
 }
 
 func (n *Node) AddPeer(c proto.NodeClient, peerVersion *proto.Version) {
 	n.PeerLock.Lock()
 	defer n.PeerLock.Unlock()
-	logs.Logger.Infof("New peer connected (%s), height (%d)", peerVersion.Version, peerVersion.Height)
+	logs.Logger.Infof("[%s]:: New peer connected (%s)", n.ListenAddr, peerVersion.ListenAddr)
 	n.Peers[c] = peerVersion
 }
 
@@ -111,4 +116,13 @@ func makeNodeClient(listenAddr string) (proto.NodeClient, error) {
 	}
 	c := proto.NewNodeClient(client)
 	return c, nil
+}
+
+func (n *Node) getVersion() *proto.Version {
+	version := &proto.Version{
+		Version:    n.version,
+		Height:     100,
+		ListenAddr: n.ListenAddr,
+	}
+	return version
 }

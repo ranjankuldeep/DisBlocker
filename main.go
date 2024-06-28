@@ -15,6 +15,8 @@ func main() {
 	makeNode(":3000", []string{})
 	time.Sleep(100 * time.Millisecond)
 	makeNode(":4000", []string{":3000"})
+	time.Sleep(4 * time.Second)
+	makeNode(":5001", []string{":4000"})
 
 	// go func() {
 	// 	for {
@@ -49,12 +51,6 @@ func makeTransaction() error {
 func makeNode(listenAddr string, bootStrapAddrs []string) *node.Node {
 	blockNode := node.NewNode(listenAddr)
 	logs.Logger.Infof("Server Running on Port %s", listenAddr)
-	go blockNode.StartServer()
-	if len(bootStrapAddrs) > 0 {
-		if err := blockNode.BootStrapNetwork(bootStrapAddrs); err != nil {
-			logs.Logger.Errorf("Error BootStraping Network %+v", err)
-			panic(err)
-		}
-	}
+	go blockNode.StartServer(bootStrapAddrs)
 	return blockNode
 }

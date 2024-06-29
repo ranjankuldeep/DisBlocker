@@ -7,6 +7,7 @@ message Block {
     repeated Transaction transactions = 2;
 }
 
+// BlockHeader
 message Header {
     int32 version = 1;   
     int32 height = 2;    
@@ -14,6 +15,7 @@ message Header {
     bytes rootHash = 4; // merkle root of txs
     int64 timeStamp = 5;
 }
+
 message TxInput {
     // The prev hash of the transaction cotanining 
     // the output we want to spend.

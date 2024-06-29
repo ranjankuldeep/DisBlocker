@@ -7,6 +7,28 @@ import (
 	"github.com/ranjankuldeep/DisBlocker/store"
 )
 
+type HeaderList struct {
+	headers []*proto.Header
+}
+
+func NewHeaderList() *HeaderList {
+	return &HeaderList{
+		headers: []*proto.Header{},
+	}
+}
+
+func (h HeaderList) GetLen() int {
+	return len(h.headers)
+}
+
+func (h HeaderList) GetHeight() int {
+	return h.GetLen() - 1
+}
+
+func (h *HeaderList) AddHeight(header *proto.Header) {
+	h.headers = append(h.headers, header)
+}
+
 type Chain struct {
 	blockStorer store.BlockStorer
 }

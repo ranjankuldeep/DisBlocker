@@ -2,7 +2,9 @@ package node
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/ranjankuldeep/DisBlocker/logs"
 	"github.com/ranjankuldeep/DisBlocker/p2p"
@@ -71,6 +73,8 @@ func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*p
 		logs.Logger.Errorf("No peer exist")
 		return nil, nil
 	}
+	// First add to your own mempool
+	// Broadcast to other nodes in the network.
 	logs.Logger.Infof("Peer: %+v", perr)
 	return nil, nil
 }
@@ -104,7 +108,7 @@ func (n *Node) bootStrapNetwork(addrs []string) error {
 		}
 		logs.Logger.Infof("[%s]: Dialing Remote Node [%s]", n.ListenAddr, addr)
 
-		peerClient, peerVersion, err := n.dialRemote(addr)
+		peerClient, peerVersion, err := n.redialWithExponentialBackoff(addr)
 		if err != nil {
 			logs.Logger.Errorf("[%s]: Error Dialing Remote Node [%s]", n.ListenAddr, addr)
 			continue
@@ -114,17 +118,47 @@ func (n *Node) bootStrapNetwork(addrs []string) error {
 	}
 	return nil
 }
+func (n *Node) redialWithExponentialBackoff(addr string) (proto.NodeClient, *proto.Version, error) {
+	var (
+		maxRetries     = 10
+		initialBackoff = time.Second
+		maxBackoff     = time.Minute
+	)
 
-func (n *Node) dialRemote(addr string) (proto.NodeClient, *proto.Version, error) {
-	client, err := makeNodeClient(addr)
-	if err != nil {
-		return nil, nil, err
+	backoff := initialBackoff
+	retries := 0
+	var lastErr error
+
+	for retries < maxRetries {
+		nodeClient, protoVersion, err, isDailed := n.dialRemote(addr)
+		if isDailed {
+			fmt.Println("Connected successfully")
+			return nodeClient, protoVersion, err
+		}
+
+		fmt.Printf("Connection failed, retrying in %v...\n", backoff)
+		time.Sleep(backoff)
+		lastErr = err
+
+		// Increase the backoff time
+		backoff *= 2
+		if backoff > maxBackoff {
+			backoff = maxBackoff
+		}
+
+		retries++
 	}
+	fmt.Println("Failed to connect after multiple attempts")
+	return nil, nil, lastErr
+}
+
+func (n *Node) dialRemote(addr string) (proto.NodeClient, *proto.Version, error, bool) {
+	client, _ := makeNodeClient(addr)
 	peerVersion, err := client.HandShake(context.Background(), n.getVersion())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, err, false
 	}
-	return client, peerVersion, nil
+	return client, peerVersion, nil, true
 }
 
 func (n *Node) canConnect(addr string) bool {

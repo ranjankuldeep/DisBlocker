@@ -28,4 +28,11 @@ func TestAddBlock(t *testing.T) {
 	fetchedBlock, err := chain.GetBlockByHash(blockHash)
 	assert.Nil(t, err)
 	assert.Equal(t, fetchedBlock, block)
+
+	fetchBlockByHeight, err := chain.GetBlockByHeight(0)
+	assert.Nil(t, err)
+	assert.Equal(t, fetchBlockByHeight, block)
+
+	_, err = chain.GetBlockByHeight(1)
+	assert.Error(t, err)
 }

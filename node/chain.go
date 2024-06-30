@@ -2,9 +2,11 @@ package node
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/ranjankuldeep/DisBlocker/proto"
 	"github.com/ranjankuldeep/DisBlocker/store"
+	"github.com/ranjankuldeep/DisBlocker/types.go"
 )
 
 type HeaderList struct {
@@ -25,6 +27,12 @@ func (h HeaderList) GetHeight() int {
 	return h.GetLen() - 1
 }
 
+func (h HeaderList) GetByIndex(index int) *proto.Header {
+	if index > h.GetHeight() {
+		panic("INDEX TOO HIGH!!")
+	}
+	return h.headers[index]
+}
 func (h *HeaderList) AddHeader(header *proto.Header) {
 	h.headers = append(h.headers, header)
 }
@@ -50,7 +58,13 @@ func (c *Chain) AddBlock(block *proto.Block) error {
 
 func (c *Chain) GetBlockByHeight(height int) (*proto.Block, error) {
 	// Implement the logic here.
-	return nil, nil
+	if c.Height() < height {
+		return nil, fmt.Errorf("given hieght (%d) too high (%d)", height, c.Height())
+	}
+	header := c.headers.GetByIndex(height)
+	hash := types.HashHeader(header)
+
+	return c.GetBlockByHash(hash)
 }
 
 func (c *Chain) GetBlockByHash(hash []byte) (*proto.Block, error) {

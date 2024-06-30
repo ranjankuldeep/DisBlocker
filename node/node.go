@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/ranjankuldeep/DisBlocker/logs"
 	"github.com/ranjankuldeep/DisBlocker/p2p"
 	"github.com/ranjankuldeep/DisBlocker/proto"
+	"github.com/ranjankuldeep/DisBlocker/types.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/peer"
@@ -68,15 +70,36 @@ func (n *Node) StartServer(bootStrapAddrs []string) error {
 }
 
 func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*proto.Ack, error) {
-	perr, ok := peer.FromContext(ctx)
+	peer, ok := peer.FromContext(ctx)
 	if !ok {
 		logs.Logger.Errorf("No peer exist")
 		return nil, nil
 	}
-	// First add to your own mempool
+	hash := hex.EncodeToString(types.HashTransaction(tx))
+	// First add to your own mempool.
 	// Broadcast to other nodes in the network.
-	logs.Logger.Infof("Peer: %+v", perr)
-	return nil, nil
+	logs.Logger.Infof("Recived tx from: %s, hash %s", peer.Addr, hash)
+	go func() {
+		if err := n.broadCast(tx); err != nil {
+			logs.Logger.Errorf("Broadcast error %+v", err)
+		}
+		logs.Logger.Info("BroadCasted Transaction to Network")
+	}()
+	return &proto.Ack{}, nil
+}
+
+func (n *Node) broadCast(msg any) error {
+	for peer := range n.Peers {
+		switch v := msg.(type) {
+		case *proto.Transaction:
+			_, err := peer.HandleTransaction(context.Background(), v)
+			if err != nil {
+				logs.Logger.Errorf("Error Broadcasting Transaction %+v", err)
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (n *Node) HandShake(ctx context.Context, clientVersion *proto.Version) (*proto.Version, error) {
@@ -95,29 +118,30 @@ func (n *Node) addPeer(c proto.NodeClient, peerVersion *proto.Version) {
 	// Handle the logic where we decide to accept or drop the
 	// incoming node connection.
 	n.Peers[c] = peerVersion
+	logs.Logger.Infof("[%s]:: New peer succesfully connected (%s)", n.ListenAddr, peerVersion.ListenAddr)
+
 	if len(peerVersion.PeerList) > 0 {
 		go n.bootStrapNetwork(peerVersion.PeerList)
 	}
-	logs.Logger.Infof("[%s]:: New peer succesfully connected (%s)", n.ListenAddr, peerVersion.ListenAddr)
+
 }
+
 func (n *Node) bootStrapNetwork(addrs []string) error {
 	for _, addr := range addrs {
-
 		if !n.canConnect(addr) {
 			continue
 		}
 		logs.Logger.Infof("[%s]: Dialing Remote Node [%s]", n.ListenAddr, addr)
-
 		peerClient, peerVersion, err := n.redialWithExponentialBackoff(addr)
 		if err != nil {
 			logs.Logger.Errorf("[%s]: Error Dialing Remote Node [%s]", n.ListenAddr, addr)
 			continue
 		}
 		n.addPeer(peerClient, peerVersion)
-
 	}
 	return nil
 }
+
 func (n *Node) redialWithExponentialBackoff(addr string) (proto.NodeClient, *proto.Version, error) {
 	var (
 		maxRetries     = 10
@@ -145,7 +169,6 @@ func (n *Node) redialWithExponentialBackoff(addr string) (proto.NodeClient, *pro
 		if backoff > maxBackoff {
 			backoff = maxBackoff
 		}
-
 		retries++
 	}
 	fmt.Println("Failed to connect after multiple attempts")
@@ -156,6 +179,7 @@ func (n *Node) dialRemote(addr string) (proto.NodeClient, *proto.Version, error,
 	client, _ := makeNodeClient(addr)
 	peerVersion, err := client.HandShake(context.Background(), n.getVersion())
 	if err != nil {
+		logs.Logger.Errorf("Error Dialing %+v", err)
 		return nil, nil, err, false
 	}
 	return client, peerVersion, nil, true

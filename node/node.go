@@ -23,6 +23,7 @@ type NodeOpts struct {
 type Node struct {
 	version string
 	NodeOpts
+	Mempool MemPool
 
 	PeerLock sync.RWMutex
 	Peers    map[proto.NodeClient]*proto.Version
@@ -43,8 +44,8 @@ func NewNode(listenAddr string) *Node {
 		PeerLock: sync.RWMutex{},
 		Peers:    make(map[proto.NodeClient]*proto.Version),
 		NodeOpts: nodeOpts,
-
-		version: "blocker-0.1",
+		Mempool:  NewInMemPool(),
+		version:  "blocker-0.1",
 	}
 }
 
@@ -76,15 +77,17 @@ func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*p
 		return nil, nil
 	}
 	hash := hex.EncodeToString(types.HashTransaction(tx))
+
 	// First add to your own mempool.
-	// Broadcast to other nodes in the network.
-	logs.Logger.Infof("Recived tx from: %s, hash %s", peer.Addr, hash)
-	go func() {
-		if err := n.broadCast(tx); err != nil {
-			logs.Logger.Errorf("Broadcast error %+v", err)
-		}
-		logs.Logger.Info("BroadCasted Transaction to Network")
-	}()
+	if n.Mempool.Add(tx) {
+		logs.Logger.Infof("Recived tx from: %s, hash %s", peer.Addr, hash)
+		go func() {
+			// Broadcast to other nodes in the network.
+			if err := n.broadCast(tx); err != nil {
+				logs.Logger.Errorf("Broadcast error %+v", err)
+			}
+		}()
+	}
 	return &proto.Ack{}, nil
 }
 
